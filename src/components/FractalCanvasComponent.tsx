@@ -1,5 +1,5 @@
-import React, {MutableRefObject, useEffect, useRef} from 'react';
-import Point from "../units/Point";
+import React, {MutableRefObject, useEffect, useRef, useState} from 'react';
+import Point from "../utils/Point";
 
 interface CanvasProps {
     width: number,
@@ -11,10 +11,14 @@ interface CanvasProps {
 
 export const FractalCanvasComponent: React.FC<CanvasProps> = (props: CanvasProps) => {
 
-    const epsilon = 0.001;
-
     const canvasRef = useRef<HTMLCanvasElement>(null) as MutableRefObject<HTMLCanvasElement>;
     const contextRef = useRef<CanvasRenderingContext2D>(null) as MutableRefObject<CanvasRenderingContext2D>;
+
+    const [abs, setAbs] = useState(8);
+    const [xOffset, setXOffset] = useState(4);
+    const [yOffset, setYOffset] = useState(4);
+
+    const epsilon = 0.001;
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -25,17 +29,25 @@ export const FractalCanvasComponent: React.FC<CanvasProps> = (props: CanvasProps
         contextRef.current = canvas.getContext('2d') as CanvasRenderingContext2D;
 
         canvas.addEventListener("click", zoom);
+    }, []);
 
-    }, [props.height, props.width]);
+    useEffect(() => {
+        setAbs(8);
+        setXOffset(4);
+        setYOffset(4);
+    }, [props.orderValue])
 
-    const draw = () => {
+    useEffect(() => {
+        console.log(abs);
+        console.log(xOffset);
+        console.log(yOffset);
         const context = contextRef.current;
         context.clearRect(0, 0, context.canvas.width, context.canvas.height);
 
         for (let x = 0; x < props.width; x++) {
             for (let y = 0; y < props.height; y++) {
 
-                let initialPoint = new Point((x / props.width) * 4 - 2, (y / props.height) * 4 - 2);
+                let initialPoint = new Point((x / props.width) * abs - xOffset, (y / props.height) * abs - yOffset);
 
                 let previousPoint = getNextIteration(initialPoint);
                 let currentPoint = getNextIteration(previousPoint);
@@ -71,15 +83,16 @@ export const FractalCanvasComponent: React.FC<CanvasProps> = (props: CanvasProps
                 context.fillRect(x, y, 1, 1);
             }
         }
-    }
-
-    useEffect(draw,[props.orderValue]);
+    }, [props.orderValue, props.hueValues, abs]);
 
     const zoom = (e: MouseEvent) => {
         let cRect = canvasRef.current.getBoundingClientRect();
         let canvasX = Math.round(e.clientX - cRect.left);
         let canvasY = Math.round(e.clientY - cRect.top);
         console.log(canvasX + " " + canvasY);
+        setAbs(prev => prev / 2);
+        setXOffset(abs * (1 - canvasX / props.width));
+        setYOffset(abs * (1 - canvasY / props.height));
     }
 
     const computeFunction = (point: Point): Point => {
