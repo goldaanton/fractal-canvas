@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {MutableRefObject, useEffect, useRef} from 'react';
 import Point from "../units/Point";
 
 interface CanvasProps {
@@ -13,24 +13,24 @@ export const FractalCanvasComponent: React.FC<CanvasProps> = (props: CanvasProps
 
     const epsilon = 0.001;
 
-    const canvasRef = useRef(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null) as MutableRefObject<HTMLCanvasElement>;
+    const contextRef = useRef<CanvasRenderingContext2D>(null) as MutableRefObject<CanvasRenderingContext2D>;
 
     useEffect(() => {
-
         const canvas = canvasRef.current;
-        // @ts-ignore
-        const context = canvas.getContext('2d');
-        context.canvas.width = props.width;
-        context.canvas.height = props.height;
 
-        /*// @ts-ignore
-        canvas.addEventListener("click", function (e) {
-            // @ts-ignore
-            let cRect = canvas.getBoundingClientRect();
-            let canvasX = Math.round(e.clientX - cRect.left);
-            let canvasY = Math.round(e.clientY - cRect.top);
-            console.log(canvasX + " " + canvasY);
-        });*/
+        canvas.width = props.width;
+        canvas.height = props.height;
+
+        contextRef.current = canvas.getContext('2d') as CanvasRenderingContext2D;
+
+        canvas.addEventListener("click", zoom);
+
+    }, [props.height, props.width]);
+
+    const draw = () => {
+        const context = contextRef.current;
+        context.clearRect(0, 0, context.canvas.width, context.canvas.height);
 
         for (let x = 0; x < props.width; x++) {
             for (let y = 0; y < props.height; y++) {
@@ -68,11 +68,19 @@ export const FractalCanvasComponent: React.FC<CanvasProps> = (props: CanvasProps
                     else if (Math.abs(currentPoint.y + 1) < epsilon)
                         context.fillStyle = 'hsla(' + props.hueValues[3] + ',100%,50%,' + alpha + ')';
                 }
-
                 context.fillRect(x, y, 1, 1);
             }
         }
-    }, [props.orderValue]);
+    }
+
+    useEffect(draw,[props.orderValue]);
+
+    const zoom = (e: MouseEvent) => {
+        let cRect = canvasRef.current.getBoundingClientRect();
+        let canvasX = Math.round(e.clientX - cRect.left);
+        let canvasY = Math.round(e.clientY - cRect.top);
+        console.log(canvasX + " " + canvasY);
+    }
 
     const computeFunction = (point: Point): Point => {
         return props.orderValue === 3
